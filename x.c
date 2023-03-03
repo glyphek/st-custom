@@ -21,8 +21,6 @@ char *argv0;
 #include "win.h"
 #include "hb.h"
 
-
-
 /* X modifiers */
 #define XK_ANY_MOD    UINT_MAX
 #define XK_NO_MOD     0
@@ -43,7 +41,6 @@ static void zoomreset(const Arg *);
 
 /* config.h for applying patches and the configuration. */
 #include "config.h"
-
 
 /* XEMBED messages */
 #define XEMBED_FOCUS_IN  4
@@ -117,16 +114,16 @@ static void (*handler[LASTEvent])(XEvent *) = {
 	[MotionNotify] = bmotion,
 	[ButtonPress] = bpress,
 	[ButtonRelease] = brelease,
-/*
- * Uncomment if you want the selection to disappear when you select something
- * different in another window.
- */
-/*	[SelectionClear] = selclear_, */
+	/*
+	 * Uncomment if you want the selection to disappear when you select something
+	 * different in another window.
+	 */
+	/*	[SelectionClear] = selclear_, */
 	[SelectionNotify] = selnotify,
-/*
- * PropertyNotify is only turned on when there is some INCR transfer happening
- * for the selection retrieval.
- */
+	/*
+	 * PropertyNotify is only turned on when there is some INCR transfer happening
+	 * for the selection retrieval.
+	 */
 	[PropertyNotify] = propnotify,
 	[SelectionRequest] = selrequest,
 };
@@ -137,7 +134,6 @@ DC dc;
 XWindow xw;
 XSelection xsel;
 TermWindow win;
-
 
 /* Font Ring Cache */
 enum {
@@ -171,7 +167,6 @@ static char *opt_line  = NULL;
 static char *opt_name  = NULL;
 static char *opt_title = NULL;
 
-
 static uint buttons; /* bit field of pressed buttons */
 
 #include "patch/x_include.c"
@@ -198,7 +193,7 @@ clippaste(const Arg *dummy)
 
 	clipboard = XInternAtom(xw.dpy, "CLIPBOARD", 0);
 	XConvertSelection(xw.dpy, clipboard, xsel.xtarget, clipboard,
-			xw.win, CurrentTime);
+	                  xw.win, CurrentTime);
 }
 
 void
@@ -211,7 +206,7 @@ void
 selpaste(const Arg *dummy)
 {
 	XConvertSelection(xw.dpy, XA_PRIMARY, xsel.xtarget, XA_PRIMARY,
-			xw.win, CurrentTime);
+	                  xw.win, CurrentTime);
 }
 
 void
@@ -271,11 +266,11 @@ uint
 buttonmask(uint button)
 {
 	return button == Button1 ? Button1Mask
-		: button == Button2 ? Button2Mask
-		: button == Button3 ? Button3Mask
-		: button == Button4 ? Button4Mask
-		: button == Button5 ? Button5Mask
-		: 0;
+	       : button == Button2 ? Button2Mask
+	       : button == Button3 ? Button3Mask
+	       : button == Button4 ? Button4Mask
+	       : button == Button5 ? Button5Mask
+	       : 0;
 }
 
 int
@@ -289,10 +284,10 @@ mouseaction(XEvent *e, uint release)
 
 	for (ms = mshortcuts; ms < mshortcuts + LEN(mshortcuts); ms++) {
 		if (ms->release == release &&
-				ms->button == e->xbutton.button &&
-				(!ms->screen || (ms->screen == screen)) &&
-				(match(ms->mod, state) ||  /* exact or forced */
-				 match(ms->mod, state & ~forcemousemod))) {
+		                ms->button == e->xbutton.button &&
+		                (!ms->screen || (ms->screen == screen)) &&
+		                (match(ms->mod, state) ||  /* exact or forced */
+		                 match(ms->mod, state & ~forcemousemod))) {
 			ms->func(&(ms->arg));
 			return 1;
 		}
@@ -314,8 +309,9 @@ mousesel(XEvent *e, int done)
 		}
 	}
 	selextend(evcol(e), evrow(e), seltype, done);
-	if (done)
+	if (done) {
 		setsel(getsel(), e->xbutton.time);
+	}
 }
 
 void
@@ -328,31 +324,37 @@ mousereport(XEvent *e)
 	static int ox, oy;
 
 	if (e->type == MotionNotify) {
-		if (x == ox && y == oy)
+		if (x == ox && y == oy) {
 			return;
-		if (!IS_SET(MODE_MOUSEMOTION) && !IS_SET(MODE_MOUSEMANY))
+		}
+		if (!IS_SET(MODE_MOUSEMOTION) && !IS_SET(MODE_MOUSEMANY)) {
 			return;
+		}
 		/* MODE_MOUSEMOTION: no reporting if no button is pressed */
-		if (IS_SET(MODE_MOUSEMOTION) && buttons == 0)
+		if (IS_SET(MODE_MOUSEMOTION) && buttons == 0) {
 			return;
+		}
 
 		/* Set btn to lowest-numbered pressed button, or 12 if no
 		 * buttons are pressed. */
-		for (btn = 1; btn <= 11 && !(buttons & (1<<(btn-1))); btn++)
+		for (btn = 1; btn <= 11 && !(buttons & (1 << (btn - 1))); btn++)
 			;
 		code = 32;
 	} else {
 		btn = e->xbutton.button;
 		/* Only buttons 1 through 11 can be encoded */
-		if (btn < 1 || btn > 11)
+		if (btn < 1 || btn > 11) {
 			return;
+		}
 		if (e->type == ButtonRelease) {
 			/* MODE_MOUSEX10: no button release reporting */
-			if (IS_SET(MODE_MOUSEX10))
+			if (IS_SET(MODE_MOUSEX10)) {
 				return;
+			}
 			/* Don't send release events for the scroll wheel */
-			if (btn == 4 || btn == 5)
+			if (btn == 4 || btn == 5) {
 				return;
+			}
 		}
 		code = 0;
 	}
@@ -362,28 +364,29 @@ mousereport(XEvent *e)
 
 	/* Encode btn into code. If no button is pressed for a motion event in
 	 * MODE_MOUSEMANY, then encode it as a release. */
-	if ((!IS_SET(MODE_MOUSESGR) && e->type == ButtonRelease) || btn == 12)
+	if ((!IS_SET(MODE_MOUSESGR) && e->type == ButtonRelease) || btn == 12) {
 		code += 3;
-	else if (btn >= 8)
+	} else if (btn >= 8) {
 		code += 128 + btn - 8;
-	else if (btn >= 4)
+	} else if (btn >= 4) {
 		code += 64 + btn - 4;
-	else
+	} else {
 		code += btn - 1;
+	}
 
 	if (!IS_SET(MODE_MOUSEX10)) {
 		code += ((state & ShiftMask  ) ?  4 : 0)
-		      + ((state & Mod1Mask   ) ?  8 : 0) /* meta key: alt */
-		      + ((state & ControlMask) ? 16 : 0);
+		        + ((state & Mod1Mask   ) ?  8 : 0) /* meta key: alt */
+		        + ((state & ControlMask) ? 16 : 0);
 	}
 
 	if (IS_SET(MODE_MOUSESGR)) {
 		len = snprintf(buf, sizeof(buf), "\033[<%d;%d;%d%c",
-				code, x+1, y+1,
-				e->type == ButtonRelease ? 'm' : 'M');
+		               code, x + 1, y + 1,
+		               e->type == ButtonRelease ? 'm' : 'M');
 	} else if (x < 223 && y < 223) {
 		len = snprintf(buf, sizeof(buf), "\033[M%c%c%c",
-				32+code, 32+x+1, 32+y+1);
+		               32 + code, 32 + x + 1, 32 + y + 1);
 	} else {
 		return;
 	}
@@ -398,16 +401,18 @@ bpress(XEvent *e)
 	struct timespec now;
 	int snap;
 
-	if (1 <= btn && btn <= 11)
-		buttons |= 1 << (btn-1);
+	if (1 <= btn && btn <= 11) {
+		buttons |= 1 << (btn - 1);
+	}
 
 	if (IS_SET(MODE_MOUSE) && !(e->xbutton.state & forcemousemod)) {
 		mousereport(e);
 		return;
 	}
 
-	if (mouseaction(e, 0))
+	if (mouseaction(e, 0)) {
 		return;
+	}
 
 	if (btn == Button1) {
 		/*
@@ -438,8 +443,8 @@ propnotify(XEvent *e)
 
 	xpev = &e->xproperty;
 	if (xpev->state == PropertyNewValue &&
-			(xpev->atom == XA_PRIMARY ||
-			 xpev->atom == clipboard)) {
+	                (xpev->atom == XA_PRIMARY ||
+	                 xpev->atom == clipboard)) {
 		selnotify(e);
 	}
 
@@ -456,25 +461,26 @@ selnotify(XEvent *e)
 	incratom = XInternAtom(xw.dpy, "INCR", 0);
 
 	ofs = 0;
-	if (e->type == SelectionNotify)
+	if (e->type == SelectionNotify) {
 		property = e->xselection.property;
-	else if (e->type == PropertyNotify)
+	} else if (e->type == PropertyNotify) {
 		property = e->xproperty.atom;
+	}
 
-	if (property == None)
+	if (property == None) {
 		return;
+	}
 
 	do {
 		if (XGetWindowProperty(xw.dpy, xw.win, property, ofs,
-					BUFSIZ/4, False, AnyPropertyType,
-					&type, &format, &nitems, &rem,
-					&data)) {
+		                       BUFSIZ / 4, False, AnyPropertyType,
+		                       &type, &format, &nitems, &rem,
+		                       &data)) {
 			fprintf(stderr, "Clipboard allocation failed\n");
 			return;
 		}
 
-		if (e->type == PropertyNotify && nitems == 0 && rem == 0)
-		{
+		if (e->type == PropertyNotify && nitems == 0 && rem == 0) {
 			/*
 			 * If there is some PropertyNotify with no data, then
 			 * this is the signal of the selection owner that all
@@ -483,7 +489,7 @@ selnotify(XEvent *e)
 			 */
 			MODBIT(xw.attrs.event_mask, 0, PropertyChangeMask);
 			XChangeWindowAttributes(xw.dpy, xw.win, CWEventMask,
-					&xw.attrs);
+			                        &xw.attrs);
 		}
 
 		if (type == incratom) {
@@ -494,7 +500,7 @@ selnotify(XEvent *e)
 			 */
 			MODBIT(xw.attrs.event_mask, 1, PropertyChangeMask);
 			XChangeWindowAttributes(xw.dpy, xw.win, CWEventMask,
-					&xw.attrs);
+			                        &xw.attrs);
 
 			/*
 			 * Deleting the property is the transfer start signal.
@@ -516,11 +522,13 @@ selnotify(XEvent *e)
 			*repl++ = '\r';
 		}
 
-		if (IS_SET(MODE_BRCKTPASTE) && ofs == 0)
+		if (IS_SET(MODE_BRCKTPASTE) && ofs == 0) {
 			ttywrite("\033[200~", 6, 0);
+		}
 		ttywrite((char *)data, nitems * format / 8, 1);
-		if (IS_SET(MODE_BRCKTPASTE) && rem == 0)
+		if (IS_SET(MODE_BRCKTPASTE) && rem == 0) {
 			ttywrite("\033[201~", 6, 0);
+		}
 		XFree(data);
 		/* number of 32-bit chunks returned */
 		ofs += nitems * format / 32;
@@ -559,8 +567,9 @@ selrequest(XEvent *e)
 	xev.selection = xsre->selection;
 	xev.target = xsre->target;
 	xev.time = xsre->time;
-	if (xsre->property == None)
+	if (xsre->property == None) {
 		xsre->property = xsre->target;
+	}
 
 	/* reject */
 	xev.property = None;
@@ -570,8 +579,8 @@ selrequest(XEvent *e)
 		/* respond with the supported type */
 		string = xsel.xtarget;
 		XChangeProperty(xsre->display, xsre->requestor, xsre->property,
-				XA_ATOM, 32, PropModeReplace,
-				(uchar *) &string, 1);
+		                XA_ATOM, 32, PropModeReplace,
+		                (uchar *) &string, 1);
 		xev.property = xsre->property;
 	} else if (xsre->target == xsel.xtarget || xsre->target == XA_STRING) {
 		/*
@@ -585,40 +594,42 @@ selrequest(XEvent *e)
 			seltext = xsel.clipboard;
 		} else {
 			fprintf(stderr,
-				"Unhandled clipboard selection 0x%lx\n",
-				xsre->selection);
+			        "Unhandled clipboard selection 0x%lx\n",
+			        xsre->selection);
 			return;
 		}
 		if (seltext != NULL) {
 			XChangeProperty(xsre->display, xsre->requestor,
-					xsre->property, xsre->target,
-					8, PropModeReplace,
-					(uchar *)seltext, strlen(seltext));
+			                xsre->property, xsre->target,
+			                8, PropModeReplace,
+			                (uchar *)seltext, strlen(seltext));
 			xev.property = xsre->property;
 		}
 	}
 
 	/* all done, send a notification to the listener */
-	if (!XSendEvent(xsre->display, xsre->requestor, 1, 0, (XEvent *) &xev))
+	if (!XSendEvent(xsre->display, xsre->requestor, 1, 0, (XEvent *) &xev)) {
 		fprintf(stderr, "Error sending SelectionNotify event\n");
+	}
 }
 
 void
 setsel(char *str, Time t)
 {
-	if (!str)
+	if (!str) {
 		return;
+	}
 
 	free(xsel.primary);
 	xsel.primary = str;
 
 	XSetSelectionOwner(xw.dpy, XA_PRIMARY, xw.win, t);
-	if (XGetSelectionOwner(xw.dpy, XA_PRIMARY) != xw.win)
+	if (XGetSelectionOwner(xw.dpy, XA_PRIMARY) != xw.win) {
 		selclear();
+	}
 
 	clipcopy(NULL);
 }
-
 
 void
 xsetsel(char *str)
@@ -631,16 +642,18 @@ brelease(XEvent *e)
 {
 	int btn = e->xbutton.button;
 
-	if (1 <= btn && btn <= 11)
-		buttons &= ~(1 << (btn-1));
+	if (1 <= btn && btn <= 11) {
+		buttons &= ~(1 << (btn - 1));
+	}
 
 	if (IS_SET(MODE_MOUSE) && !(e->xbutton.state & forcemousemod)) {
 		mousereport(e);
 		return;
 	}
 
-	if (mouseaction(e, 1))
+	if (mouseaction(e, 1)) {
 		return;
+	}
 	if (btn == Button1) {
 		mousesel(e, 1);
 	}
@@ -663,10 +676,12 @@ cresize(int width, int height)
 {
 	int col, row;
 
-	if (width != 0)
+	if (width != 0) {
 		win.w = width;
-	if (height != 0)
+	}
+	if (height != 0) {
 		win.h = height;
+	}
 
 	col = (win.w - 2 * borderpx) / win.cw;
 	row = (win.h - 2 * borderpx) / win.ch;
@@ -687,8 +702,8 @@ xresize(int col, int row)
 
 	XFreePixmap(xw.dpy, xw.buf);
 	xw.buf = XCreatePixmap(xw.dpy, xw.win, win.w, win.h,
-			xw.depth
-	);
+	                       xw.depth
+	                      );
 	XftDrawChange(xw.draw, xw.buf);
 	xclear(0, 0, win.w, win.h);
 
@@ -709,24 +724,23 @@ xloadcolor(int i, const char *name, Color *ncolor)
 
 	if (!name) {
 		if (BETWEEN(i, 16, 255)) { /* 256 color */
-			if (i < 6*6*6+16) { /* same colors as xterm */
-				color.red   = sixd_to_16bit( ((i-16)/36)%6 );
-				color.green = sixd_to_16bit( ((i-16)/6) %6 );
-				color.blue  = sixd_to_16bit( ((i-16)/1) %6 );
+			if (i < 6 * 6 * 6 + 16) { /* same colors as xterm */
+				color.red   = sixd_to_16bit( ((i - 16) / 36) % 6 );
+				color.green = sixd_to_16bit( ((i - 16) / 6) % 6 );
+				color.blue  = sixd_to_16bit( ((i - 16) / 1) % 6 );
 			} else { /* greyscale */
-				color.red = 0x0808 + 0x0a0a * (i - (6*6*6+16));
+				color.red = 0x0808 + 0x0a0a * (i - (6 * 6 * 6 + 16));
 				color.green = color.blue = color.red;
 			}
 			return XftColorAllocValue(xw.dpy, xw.vis,
 			                          xw.cmap, &color, ncolor);
-		} else
+		} else {
 			name = colorname[i];
+		}
 	}
 
 	return XftColorAllocName(xw.dpy, xw.vis, xw.cmap, name, ncolor);
 }
-
-
 
 void
 xloadcols(void)
@@ -736,8 +750,9 @@ xloadcols(void)
 	Color *cp;
 
 	if (loaded) {
-		for (cp = dc.col; cp < &dc.col[dc.collen]; ++cp)
+		for (cp = dc.col; cp < &dc.col[dc.collen]; ++cp) {
 			XftColorFree(xw.dpy, xw.vis, xw.cmap, cp);
+		}
 	} else {
 		dc.collen = MAX(LEN(colorname), 256);
 		dc.col = xmalloc(dc.collen * sizeof(Color));
@@ -745,14 +760,16 @@ xloadcols(void)
 
 	for (i = 0; i < dc.collen; i++)
 		if (!xloadcolor(i, NULL, &dc.col[i])) {
-			if (colorname[i])
+			if (colorname[i]) {
 				die("could not allocate color '%s'\n", colorname[i]);
-			else
+			} else {
 				die("could not allocate color %d\n", i);
+			}
 		}
 	/* set alpha value of bg color */
-	if (opt_alpha)
+	if (opt_alpha) {
 		alpha = strtof(opt_alpha, NULL);
+	}
 	dc.col[defaultbg].color.alpha = (unsigned short)(0xffff * alpha);
 	dc.col[defaultbg].pixel &= 0x00FFFFFF;
 	dc.col[defaultbg].pixel |= (unsigned char)(0xff * alpha) << 24;
@@ -762,8 +779,9 @@ xloadcols(void)
 int
 xgetcolor(int x, unsigned char *r, unsigned char *g, unsigned char *b)
 {
-	if (!BETWEEN(x, 0, dc.collen))
+	if (!BETWEEN(x, 0, dc.collen)) {
 		return 1;
+	}
 
 	*r = dc.col[x].color.red >> 8;
 	*g = dc.col[x].color.green >> 8;
@@ -777,19 +795,22 @@ xsetcolorname(int x, const char *name)
 {
 	Color ncolor;
 
-	if (!BETWEEN(x, 0, dc.collen))
+	if (!BETWEEN(x, 0, dc.collen)) {
 		return 1;
+	}
 
-	if (!xloadcolor(x, name, &ncolor))
+	if (!xloadcolor(x, name, &ncolor)) {
 		return 1;
+	}
 
 	XftColorFree(xw.dpy, xw.vis, xw.cmap, &dc.col[x]);
 	dc.col[x] = ncolor;
 
 	/* set alpha value of bg color */
 	if (x == defaultbg) {
-		if (opt_alpha)
+		if (opt_alpha) {
 			alpha = strtof(opt_alpha, NULL);
+		}
 		dc.col[defaultbg].color.alpha = (unsigned short)(0xffff * alpha);
 		dc.col[defaultbg].pixel &= 0x00FFFFFF;
 		dc.col[defaultbg].pixel |= (unsigned char)(0xff * alpha) << 24;
@@ -804,8 +825,8 @@ void
 xclear(int x1, int y1, int x2, int y2)
 {
 	XftDrawRect(xw.draw,
-			&dc.col[IS_SET(MODE_REVERSE)? defaultfg : defaultbg],
-			x1, y1, x2-x1, y2-y1);
+	            &dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg],
+	            x1, y1, x2 - x1, y2 - y1);
 }
 
 void
@@ -818,7 +839,8 @@ void
 xhints(void)
 {
 	XClassHint class = {opt_name ? opt_name : termname,
-	                    opt_class ? opt_class : termname};
+		           opt_class ? opt_class : termname
+	};
 	XWMHints wm = {.flags = InputHint, .input = 1};
 	XSizeHints *sizeh;
 
@@ -838,7 +860,7 @@ xhints(void)
 		sizeh->min_width = sizeh->max_width = win.w;
 		sizeh->min_height = sizeh->max_height = win.h;
 	}
-	if (xw.gm & (XValue|YValue)) {
+	if (xw.gm & (XValue | YValue)) {
 		sizeh->flags |= USPosition | PWinGravity;
 		sizeh->x = xw.l;
 		sizeh->y = xw.t;
@@ -846,14 +868,14 @@ xhints(void)
 	}
 
 	XSetWMProperties(xw.dpy, xw.win, NULL, NULL, NULL, 0, sizeh, &wm,
-			&class);
+	                 &class);
 	XFree(sizeh);
 }
 
 int
 xgeommasktogravity(int mask)
 {
-	switch (mask & (XNegative|YNegative)) {
+	switch (mask & (XNegative | YNegative)) {
 	case 0:
 		return NorthWestGravity;
 	case XNegative:
@@ -872,12 +894,13 @@ ximopen(Display *dpy)
 	XICCallback icdestroy = { .client_data = NULL, .callback = xicdestroy };
 
 	xw.ime.xim = XOpenIM(xw.dpy, NULL, NULL, NULL);
-	if (xw.ime.xim == NULL)
+	if (xw.ime.xim == NULL) {
 		return 0;
+	}
 
 	if (XSetIMValues(xw.ime.xim, XNDestroyCallback, &imdestroy, NULL))
 		fprintf(stderr, "XSetIMValues: "
-		                "Could not set XNDestroyCallback.\n");
+		        "Could not set XNDestroyCallback.\n");
 
 	xw.ime.spotlist = XVaCreateNestedList(0, XNSpotLocation, &xw.ime.spot,
 	                                      NULL);
@@ -889,8 +912,9 @@ ximopen(Display *dpy)
 		                       XNDestroyCallback, &icdestroy,
 		                       NULL);
 	}
-	if (xw.ime.xic == NULL)
+	if (xw.ime.xic == NULL) {
 		fprintf(stderr, "XCreateIC: Could not create input context.\n");
+	}
 
 	return 1;
 }
@@ -934,8 +958,9 @@ xloadfont(Font *f, FcPattern *pattern)
 	 * "missing glyph" lookups.
 	 */
 	configured = FcPatternDuplicate(pattern);
-	if (!configured)
+	if (!configured) {
 		return 1;
+	}
 
 	FcConfigSubstitute(NULL, configured, FcMatchPattern);
 	XftDefaultSubstitute(xw.dpy, xw.scr, configured);
@@ -953,30 +978,30 @@ xloadfont(Font *f, FcPattern *pattern)
 	}
 
 	if ((XftPatternGetInteger(pattern, "slant", 0, &wantattr) ==
-	    XftResultMatch)) {
+	                XftResultMatch)) {
 		/*
 		 * Check if xft was unable to find a font with the appropriate
 		 * slant but gave us one anyway. Try to mitigate.
 		 */
 		if ((XftPatternGetInteger(f->match->pattern, "slant", 0,
-		    &haveattr) != XftResultMatch) || haveattr < wantattr) {
+		                          &haveattr) != XftResultMatch) || haveattr < wantattr) {
 			f->badslant = 1;
 			fputs("font slant does not match\n", stderr);
 		}
 	}
 
 	if ((XftPatternGetInteger(pattern, "weight", 0, &wantattr) ==
-	    XftResultMatch)) {
+	                XftResultMatch)) {
 		if ((XftPatternGetInteger(f->match->pattern, "weight", 0,
-		    &haveattr) != XftResultMatch) || haveattr != wantattr) {
+		                          &haveattr) != XftResultMatch) || haveattr != wantattr) {
 			f->badweight = 1;
 			fputs("font weight does not match\n", stderr);
 		}
 	}
 
 	XftTextExtentsUtf8(xw.dpy, f->match,
-		(const FcChar8 *) ascii_printable,
-		strlen(ascii_printable), &extents);
+	                   (const FcChar8 *) ascii_printable,
+	                   strlen(ascii_printable), &extents);
 
 	f->set = NULL;
 	f->pattern = configured;
@@ -998,13 +1023,15 @@ xloadfonts(const char *fontstr, double fontsize)
 	FcPattern *pattern;
 	double fontval;
 
-	if (fontstr[0] == '-')
+	if (fontstr[0] == '-') {
 		pattern = XftXlfdParse(fontstr, False, False);
-	else
+	} else {
 		pattern = FcNameParse((const FcChar8 *)fontstr);
+	}
 
-	if (!pattern)
+	if (!pattern) {
 		die("can't open font %s\n", fontstr);
+	}
 
 	if (fontsize > 1) {
 		FcPatternDel(pattern, FC_PIXEL_SIZE);
@@ -1013,10 +1040,10 @@ xloadfonts(const char *fontstr, double fontsize)
 		usedfontsize = fontsize;
 	} else {
 		if (FcPatternGetDouble(pattern, FC_PIXEL_SIZE, 0, &fontval) ==
-				FcResultMatch) {
+		                FcResultMatch) {
 			usedfontsize = fontval;
 		} else if (FcPatternGetDouble(pattern, FC_SIZE, 0, &fontval) ==
-				FcResultMatch) {
+		                FcResultMatch) {
 			usedfontsize = -1;
 		} else {
 			/*
@@ -1029,15 +1056,17 @@ xloadfonts(const char *fontstr, double fontsize)
 		defaultfontsize = usedfontsize;
 	}
 
-	if (xloadfont(&dc.font, pattern))
+	if (xloadfont(&dc.font, pattern)) {
 		die("can't open font %s\n", fontstr);
+	}
 
 	if (usedfontsize < 0) {
 		FcPatternGetDouble(dc.font.match->pattern,
 		                   FC_PIXEL_SIZE, 0, &fontval);
 		usedfontsize = fontval;
-		if (fontsize == 0)
+		if (fontsize == 0) {
 			defaultfontsize = fontval;
+		}
 	}
 
 	/* Setting character width and height. */
@@ -1046,18 +1075,21 @@ xloadfonts(const char *fontstr, double fontsize)
 
 	FcPatternDel(pattern, FC_SLANT);
 	FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ITALIC);
-	if (xloadfont(&dc.ifont, pattern))
+	if (xloadfont(&dc.ifont, pattern)) {
 		die("can't open font %s\n", fontstr);
+	}
 
 	FcPatternDel(pattern, FC_WEIGHT);
 	FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
-	if (xloadfont(&dc.ibfont, pattern))
+	if (xloadfont(&dc.ibfont, pattern)) {
 		die("can't open font %s\n", fontstr);
+	}
 
 	FcPatternDel(pattern, FC_SLANT);
 	FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ROMAN);
-	if (xloadfont(&dc.bfont, pattern))
+	if (xloadfont(&dc.bfont, pattern)) {
 		die("can't open font %s\n", fontstr);
+	}
 
 	FcPatternDestroy(pattern);
 }
@@ -1067,8 +1099,9 @@ xunloadfont(Font *f)
 {
 	XftFontClose(xw.dpy, f->match);
 	FcPatternDestroy(f->pattern);
-	if (f->set)
+	if (f->set) {
 		FcFontSetDestroy(f->set);
+	}
 }
 
 void
@@ -1078,8 +1111,9 @@ xunloadfonts(void)
 	hbunloadfonts();
 
 	/* Free the loaded fonts in the font cache.  */
-	while (frclen > 0)
+	while (frclen > 0) {
 		XftFontClose(xw.dpy, frc[--frclen].font);
+	}
 
 	xunloadfont(&dc.font);
 	xunloadfont(&dc.bfont);
@@ -1098,8 +1132,9 @@ xinit(int cols, int rows)
 	XWindowAttributes attr;
 	XVisualInfo vis;
 
-	if (!(xw.dpy = XOpenDisplay(NULL)))
+	if (!(xw.dpy = XOpenDisplay(NULL))) {
 		die("can't open display\n");
+	}
 	xw.scr = XDefaultScreen(xw.dpy);
 
 	if (!(opt_embed && (parent = strtol(opt_embed, NULL, 0)))) {
@@ -1114,10 +1149,11 @@ xinit(int cols, int rows)
 	xw.vis = vis.visual;
 
 	/* font */
-	if (!FcInit())
+	if (!FcInit()) {
 		die("could not init fontconfig.\n");
+	}
 
-	usedfont = (opt_font == NULL)? font : opt_font;
+	usedfont = (opt_font == NULL) ? font : opt_font;
 	xloadfonts(usedfont, 0);
 
 	/* spare fonts */
@@ -1130,25 +1166,27 @@ xinit(int cols, int rows)
 	/* adjust fixed window geometry */
 	win.w = 2 * borderpx + cols * win.cw;
 	win.h = 2 * borderpx + rows * win.ch;
-	if (xw.gm & XNegative)
+	if (xw.gm & XNegative) {
 		xw.l += DisplayWidth(xw.dpy, xw.scr) - win.w - 2;
-	if (xw.gm & YNegative)
+	}
+	if (xw.gm & YNegative) {
 		xw.t += DisplayHeight(xw.dpy, xw.scr) - win.h - 2;
+	}
 
 	/* Events */
 	xw.attrs.background_pixel = dc.col[defaultbg].pixel;
 	xw.attrs.border_pixel = dc.col[defaultbg].pixel;
 	xw.attrs.bit_gravity = NorthWestGravity;
 	xw.attrs.event_mask = FocusChangeMask | KeyPressMask | KeyReleaseMask
-		| ExposureMask | VisibilityChangeMask | StructureNotifyMask
-		| ButtonMotionMask | ButtonPressMask | ButtonReleaseMask
-		;
+	                      | ExposureMask | VisibilityChangeMask | StructureNotifyMask
+	                      | ButtonMotionMask | ButtonPressMask | ButtonReleaseMask
+	                      ;
 	xw.attrs.colormap = xw.cmap;
 
 	xw.win = XCreateWindow(xw.dpy, parent, xw.l, xw.t,
-			win.w, win.h, 0, xw.depth, InputOutput,
-			xw.vis, CWBackPixel | CWBorderPixel | CWBitGravity
-			| CWEventMask | CWColormap, &xw.attrs);
+	                       win.w, win.h, 0, xw.depth, InputOutput,
+	                       xw.vis, CWBackPixel | CWBorderPixel | CWBitGravity
+	                       | CWEventMask | CWColormap, &xw.attrs);
 
 	memset(&gcvalues, 0, sizeof(gcvalues));
 	gcvalues.graphics_exposures = False;
@@ -1199,7 +1237,7 @@ xinit(int cols, int rows)
 
 	xw.netwmpid = XInternAtom(xw.dpy, "_NET_WM_PID", False);
 	XChangeProperty(xw.dpy, xw.win, xw.netwmpid, XA_CARDINAL, 32,
-			PropModeReplace, (uchar *)&thispid, 1);
+	                PropModeReplace, (uchar *)&thispid, 1);
 
 
 	win.mode = MODE_NUMLOCK;
@@ -1213,8 +1251,9 @@ xinit(int cols, int rows)
 	xsel.primary = NULL;
 	xsel.clipboard = NULL;
 	xsel.xtarget = XInternAtom(xw.dpy, "UTF8_STRING", 0);
-	if (xsel.xtarget == None)
+	if (xsel.xtarget == None) {
 		xsel.xtarget = XA_STRING;
+	}
 
 	boxdraw_xinit(xw.dpy, xw.cmap, xw.draw, xw.vis);
 }
@@ -1257,20 +1296,20 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 	mode = prevmode = glyphs[0].mode;
 	xresetfontsettings(mode, &font, &frcflags);
 
-	for (i = 0, xp = winx, yp = winy + font->ascent; i < len; ++i)
-	{
+	for (i = 0, xp = winx, yp = winy + font->ascent; i < len; ++i) {
 		/* Fetch rune and mode for current glyph. */
 		mode = glyphs[i].mode;
 
 		/* Skip dummy wide-character spacing. */
-		if (mode & ATTR_WDUMMY)
+		if (mode & ATTR_WDUMMY) {
 			continue;
+		}
 
 		if (
-			prevmode != mode
-			|| ATTRCMP(glyphs[start], glyphs[i])
-			|| selected(x + i, y) != selected(x + start, y)
-			|| i == (len - 1)
+		        prevmode != mode
+		        || ATTRCMP(glyphs[start], glyphs[i])
+		        || selected(x + i, y) != selected(x + start, y)
+		        || i == (len - 1)
 		) {
 			/* Handle 1-character wide segments and end of line */
 			length = i - start;
@@ -1286,8 +1325,9 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 				rune = glyphs[start + code_idx].u;
 				runewidth = win.cw * ((glyphs[start + code_idx].mode & ATTR_WIDE) ? 2.0f : 1.0f);
 
-				if (glyphs[start + code_idx].mode & ATTR_WDUMMY)
+				if (glyphs[start + code_idx].mode & ATTR_WDUMMY) {
 					continue;
+				}
 
 				if (glyphs[start + code_idx].mode & ATTR_BOXDRAW) {
 					/* minor shoehorning: boxdraw uses only this ushort */
@@ -1297,8 +1337,7 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 					specs[numspecs].y = yp;
 					xp += runewidth;
 					numspecs++;
-				} else
-				if (shaped.glyphs[code_idx].codepoint != 0) {
+				} else if (shaped.glyphs[code_idx].codepoint != 0) {
 					/* If symbol is found, put it into the specs. */
 					specs[numspecs].font = font->match;
 					specs[numspecs].glyph = shaped.glyphs[code_idx].codepoint;
@@ -1311,19 +1350,21 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 					for (f = 0; f < frclen; f++) {
 						glyphidx = XftCharIndex(xw.dpy, frc[f].font, rune);
 						/* Everything correct. */
-						if (glyphidx && frc[f].flags == frcflags)
+						if (glyphidx && frc[f].flags == frcflags) {
 							break;
+						}
 						/* We got a default font for a not found glyph. */
 						if (!glyphidx && frc[f].flags == frcflags
-								&& frc[f].unicodep == rune) {
+						                && frc[f].unicodep == rune) {
 							break;
 						}
 					}
 
 					/* Nothing was found. Use fontconfig to find matching font. */
 					if (f >= frclen) {
-						if (!font->set)
+						if (!font->set) {
 							font->set = FcFontSort(0, font->pattern, 1, 0, &fcres);
+						}
 						fcsets[0] = font->set;
 
 						/*
@@ -1354,7 +1395,7 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 						frc[frclen].font = XftFontOpenPattern(xw.dpy, fontpattern);
 						if (!frc[frclen].font)
 							die("XftFontOpenPattern failed seeking fallback font: %s\n",
-								strerror(errno));
+							    strerror(errno));
 						frc[frclen].flags = frcflags;
 						frc[frclen].unicodep = rune;
 
@@ -1405,10 +1446,11 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 
 	/* Fallback on color display for attributes not supported by the font */
 	if (base.mode & ATTR_ITALIC && base.mode & ATTR_BOLD) {
-		if (dc.ibfont.badslant || dc.ibfont.badweight)
+		if (dc.ibfont.badslant || dc.ibfont.badweight) {
 			base.fg = defaultattr;
+		}
 	} else if ((base.mode & ATTR_ITALIC && dc.ifont.badslant) ||
-	    (base.mode & ATTR_BOLD && dc.bfont.badweight)) {
+	                (base.mode & ATTR_BOLD && dc.bfont.badweight)) {
 		base.fg = defaultattr;
 	}
 
@@ -1435,8 +1477,9 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	}
 
 	/* Change basic system colors [0-7] to bright system colors [8-15] */
-	if ((base.mode & ATTR_BOLD_FAINT) == ATTR_BOLD && BETWEEN(base.fg, 0, 7))
+	if ((base.mode & ATTR_BOLD_FAINT) == ATTR_BOLD && BETWEEN(base.fg, 0, 7)) {
 		fg = &dc.col[base.fg + 8];
+	}
 
 	if (IS_SET(MODE_REVERSE)) {
 		if (fg == &dc.col[defaultfg]) {
@@ -1447,7 +1490,7 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 			colfg.blue = ~fg->color.blue;
 			colfg.alpha = fg->color.alpha;
 			XftColorAllocValue(xw.dpy, xw.vis, xw.cmap, &colfg,
-					&revfg);
+			                   &revfg);
 			fg = &revfg;
 		}
 
@@ -1459,7 +1502,7 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 			colbg.blue = ~bg->color.blue;
 			colbg.alpha = bg->color.alpha;
 			XftColorAllocValue(xw.dpy, xw.vis, xw.cmap, &colbg,
-					&revbg);
+			                   &revbg);
 			bg = &revbg;
 		}
 	}
@@ -1479,28 +1522,32 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 		bg = temp;
 	}
 
-	if (base.mode & ATTR_BLINK && win.mode & MODE_BLINK)
+	if (base.mode & ATTR_BLINK && win.mode & MODE_BLINK) {
 		fg = bg;
+	}
 
-	if (base.mode & ATTR_INVISIBLE)
+	if (base.mode & ATTR_INVISIBLE) {
 		fg = bg;
+	}
 
 
 
 	/* Intelligent cleaning up of the borders. */
 	if (x == 0) {
-		xclear(0, (y == 0)? 0 : winy, borderpx,
-			winy + win.ch +
-			((winy + win.ch >= borderpx + win.th)? win.h : 0));
+		xclear(0, (y == 0) ? 0 : winy, borderpx,
+		       winy + win.ch +
+		       ((winy + win.ch >= borderpx + win.th) ? win.h : 0));
 	}
 	if (winx + width >= borderpx + win.tw) {
-		xclear(winx + width, (y == 0)? 0 : winy, win.w,
-			((winy + win.ch >= borderpx + win.th)? win.h : (winy + win.ch)));
+		xclear(winx + width, (y == 0) ? 0 : winy, win.w,
+		       ((winy + win.ch >= borderpx + win.th) ? win.h : (winy + win.ch)));
 	}
-	if (y == 0)
+	if (y == 0) {
 		xclear(winx, 0, winx + width, borderpx);
-	if (winy + win.ch >= borderpx + win.th)
+	}
+	if (winy + win.ch >= borderpx + win.th) {
 		xclear(winx, winy + win.ch, winx + width, win.h);
+	}
 
 	/* Clean up the region we want to draw to. */
 
@@ -1524,12 +1571,12 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	/* Render underline and strikethrough. */
 	if (base.mode & ATTR_UNDERLINE) {
 		XftDrawRect(xw.draw, fg, winx, winy + dc.font.ascent * chscale + 1,
-				width, 1);
+		            width, 1);
 	}
 
 	if (base.mode & ATTR_STRUCK) {
 		XftDrawRect(xw.draw, fg, winx, winy + 2 * dc.font.ascent * chscale / 3,
-				width, 1);
+		            width, 1);
 	}
 
 
@@ -1553,19 +1600,21 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, int le
 	Color drawcol;
 
 	/* remove the old cursor */
-	if (selected(ox, oy))
+	if (selected(ox, oy)) {
 		og.mode ^= ATTR_REVERSE;
+	}
 	/* Redraw the line where cursor was previously.
 	 * It will restore the ligatures broken by the cursor. */
 	xdrawline(line, 0, oy, len);
 
-	if (IS_SET(MODE_HIDE))
+	if (IS_SET(MODE_HIDE)) {
 		return;
+	}
 
 	/*
 	 * Select the right color for the right mode.
 	 */
-	g.mode &= ATTR_BOLD|ATTR_ITALIC|ATTR_UNDERLINE|ATTR_STRUCK|ATTR_WIDE|ATTR_BOXDRAW;
+	g.mode &= ATTR_BOLD | ATTR_ITALIC | ATTR_UNDERLINE | ATTR_STRUCK | ATTR_WIDE | ATTR_BOXDRAW;
 
 	if (IS_SET(MODE_REVERSE)) {
 		g.mode |= ATTR_REVERSE;
@@ -1581,8 +1630,7 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, int le
 		if (selected(cx, cy)) {
 			g.fg = defaultfg;
 			g.bg = defaultrcs;
-		}
-		else {
+		} else {
 			g.fg = defaultbg;
 			g.bg = defaultcs;
 		}
@@ -1595,7 +1643,7 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, int le
 		switch (win.cursor) {
 		case 7: /* st extension */
 			g.u = 0x2603; /* snowman (U+2603) */
-			/* FALLTHROUGH */
+		/* FALLTHROUGH */
 		case 0: /* Blinking block */
 		case 1: /* Blinking block (default) */
 		case 2: /* Steady block */
@@ -1604,36 +1652,36 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, int le
 		case 3: /* Blinking underline */
 		case 4: /* Steady underline */
 			XftDrawRect(xw.draw, &drawcol,
-					borderpx + cx * win.cw,
-					borderpx + (cy + 1) * win.ch - \
-						cursorthickness,
-					win.cw, cursorthickness);
+			            borderpx + cx * win.cw,
+			            borderpx + (cy + 1) * win.ch - \
+			            cursorthickness,
+			            win.cw, cursorthickness);
 			break;
 		case 5: /* Blinking bar */
 		case 6: /* Steady bar */
 			XftDrawRect(xw.draw, &drawcol,
-					borderpx + cx * win.cw,
-					borderpx + cy * win.ch,
-					cursorthickness, win.ch);
+			            borderpx + cx * win.cw,
+			            borderpx + cy * win.ch,
+			            cursorthickness, win.ch);
 			break;
 		}
 	} else {
 		XftDrawRect(xw.draw, &drawcol,
-				borderpx + cx * win.cw,
-				borderpx + cy * win.ch,
-				win.cw - 1, 1);
+		            borderpx + cx * win.cw,
+		            borderpx + cy * win.ch,
+		            win.cw - 1, 1);
 		XftDrawRect(xw.draw, &drawcol,
-				borderpx + cx * win.cw,
-				borderpx + cy * win.ch,
-				1, win.ch - 1);
+		            borderpx + cx * win.cw,
+		            borderpx + cy * win.ch,
+		            1, win.ch - 1);
 		XftDrawRect(xw.draw, &drawcol,
-				borderpx + (cx + 1) * win.cw - 1,
-				borderpx + cy * win.ch,
-				1, win.ch - 1);
+		            borderpx + (cx + 1) * win.cw - 1,
+		            borderpx + cy * win.ch,
+		            1, win.ch - 1);
 		XftDrawRect(xw.draw, &drawcol,
-				borderpx + cx * win.cw,
-				borderpx + (cy + 1) * win.ch - 1,
-				win.cw, 1);
+		            borderpx + cx * win.cw,
+		            borderpx + (cy + 1) * win.ch - 1,
+		            win.cw, 1);
 	}
 }
 
@@ -1653,8 +1701,9 @@ xseticontitle(char *p)
 	DEFAULT(p, opt_title);
 
 	if (Xutf8TextListToTextProperty(xw.dpy, &p, 1, XUTF8StringStyle,
-			&prop) != Success)
+	                                &prop) != Success) {
 		return;
+	}
 	XSetWMIconName(xw.dpy, xw.win, &prop);
 	XSetTextProperty(xw.dpy, xw.win, &prop, xw.netwmiconname);
 	XFree(prop.value);
@@ -1667,8 +1716,9 @@ xsettitle(char *p)
 	DEFAULT(p, opt_title);
 
 	if (Xutf8TextListToTextProperty(xw.dpy, &p, 1, XUTF8StringStyle,
-			&prop) != Success)
+	                                &prop) != Success) {
 		return;
+	}
 	XSetWMName(xw.dpy, xw.win, &prop);
 	XSetTextProperty(xw.dpy, xw.win, &prop, xw.netwmname);
 	XFree(prop.value);
@@ -1691,10 +1741,12 @@ xdrawline(Line line, int x1, int y1, int x2)
 	i = ox = 0;
 	for (x = x1; x < x2 && i < numspecs; x++) {
 		new = line[x];
-		if (new.mode == ATTR_WDUMMY)
+		if (new.mode == ATTR_WDUMMY) {
 			continue;
-		if (selected(x, y1))
+		}
+		if (selected(x, y1)) {
 			new.mode ^= ATTR_REVERSE;
+		}
 		if (i > 0 && ATTRCMP(base, new)) {
 			xdrawglyphfontspecs(specs, base, i, ox, y1);
 			specs += i;
@@ -1707,8 +1759,9 @@ xdrawline(Line line, int x1, int y1, int x2)
 		}
 		i++;
 	}
-	if (i > 0)
+	if (i > 0) {
 		xdrawglyphfontspecs(specs, base, i, ox, y1);
+	}
 }
 
 void
@@ -1738,8 +1791,8 @@ xfinishdraw(void)
 
 		if (!im->pixmap) {
 			im->pixmap = (void *)XCreatePixmap(xw.dpy, xw.win, im->width, im->height,
-				xw.depth
-			);
+			                                   xw.depth
+			                                  );
 			XImage ximage = {
 				.format = ZPixmap,
 				.data = (char *)im->pixels,
@@ -1769,15 +1822,16 @@ xfinishdraw(void)
 
 	XCopyArea(xw.dpy, xw.buf, xw.win, dc.gc, 0, 0, win.w, win.h, 0, 0);
 	XSetForeground(xw.dpy, dc.gc,
-			dc.col[IS_SET(MODE_REVERSE)?
-				defaultfg : defaultbg].pixel);
+	               dc.col[IS_SET(MODE_REVERSE) ?
+	                                           defaultfg : defaultbg].pixel);
 }
 
 void
 xximspot(int x, int y)
 {
-	if (xw.ime.xic == NULL)
+	if (xw.ime.xic == NULL) {
 		return;
+	}
 
 	xw.ime.spot.x = borderpx + x * win.cw;
 	xw.ime.spot.y = borderpx + (y + 1) * win.ch;
@@ -1817,15 +1871,17 @@ xsetmode(int set, unsigned int flags)
 {
 	int mode = win.mode;
 	MODBIT(win.mode, set, flags);
-	if ((win.mode & MODE_REVERSE) != (mode & MODE_REVERSE))
+	if ((win.mode & MODE_REVERSE) != (mode & MODE_REVERSE)) {
 		redraw();
+	}
 }
 
 int
 xsetcursor(int cursor)
 {
-	if (!BETWEEN(cursor, 0, 7)) /* 7: st extension */
+	if (!BETWEEN(cursor, 0, 7)) { /* 7: st extension */
 		return 1;
+	}
 	win.cursor = cursor;
 	return 0;
 }
@@ -1843,10 +1899,12 @@ xseturgency(int add)
 void
 xbell(void)
 {
-	if (!(IS_SET(MODE_FOCUSED)))
+	if (!(IS_SET(MODE_FOCUSED))) {
 		xseturgency(1);
-	if (bellvolume)
+	}
+	if (bellvolume) {
 		XkbBell(xw.dpy, xw.win, bellvolume, (Atom)NULL);
+	}
 }
 
 void
@@ -1855,22 +1913,27 @@ focus(XEvent *ev)
 	XFocusChangeEvent *e = &ev->xfocus;
 
 
-	if (e->mode == NotifyGrab)
+	if (e->mode == NotifyGrab) {
 		return;
+	}
 
 	if (ev->type == FocusIn) {
-		if (xw.ime.xic)
+		if (xw.ime.xic) {
 			XSetICFocus(xw.ime.xic);
+		}
 		win.mode |= MODE_FOCUSED;
 		xseturgency(0);
-		if (IS_SET(MODE_FOCUS))
+		if (IS_SET(MODE_FOCUS)) {
 			ttywrite("\033[I", 3, 0);
+		}
 	} else {
-		if (xw.ime.xic)
+		if (xw.ime.xic) {
 			XUnsetICFocus(xw.ime.xic);
+		}
 		win.mode &= ~MODE_FOCUSED;
-		if (IS_SET(MODE_FOCUS))
+		if (IS_SET(MODE_FOCUS)) {
 			ttywrite("\033[O", 3, 0);
+		}
 	}
 }
 
@@ -1888,28 +1951,35 @@ kmap(KeySym k, uint state)
 
 	/* Check for mapped keys out of X11 function keys. */
 	for (i = 0; i < LEN(mappedkeys); i++) {
-		if (mappedkeys[i] == k)
+		if (mappedkeys[i] == k) {
 			break;
+		}
 	}
 	if (i == LEN(mappedkeys)) {
-		if ((k & 0xFFFF) < 0xFD00)
+		if ((k & 0xFFFF) < 0xFD00) {
 			return NULL;
+		}
 	}
 
 	for (kp = key; kp < key + LEN(key); kp++) {
-		if (kp->k != k)
+		if (kp->k != k) {
 			continue;
+		}
 
-		if (!match(kp->mask, state))
+		if (!match(kp->mask, state)) {
 			continue;
+		}
 
-		if (IS_SET(MODE_APPKEYPAD) ? kp->appkey < 0 : kp->appkey > 0)
+		if (IS_SET(MODE_APPKEYPAD) ? kp->appkey < 0 : kp->appkey > 0) {
 			continue;
-		if (IS_SET(MODE_NUMLOCK) && kp->appkey == 2)
+		}
+		if (IS_SET(MODE_NUMLOCK) && kp->appkey == 2) {
 			continue;
+		}
 
-		if (IS_SET(MODE_APPCURSOR) ? kp->appcursor < 0 : kp->appcursor > 0)
+		if (IS_SET(MODE_APPCURSOR) ? kp->appcursor < 0 : kp->appcursor > 0) {
 			continue;
+		}
 
 		return kp->s;
 	}
@@ -1929,13 +1999,15 @@ kpress(XEvent *ev)
 	Shortcut *bp;
 
 
-	if (IS_SET(MODE_KBDLOCK))
+	if (IS_SET(MODE_KBDLOCK)) {
 		return;
+	}
 
 	if (xw.ime.xic) {
 		len = XmbLookupString(xw.ime.xic, e, buf, sizeof buf, &ksym, &status);
-		if (status == XBufferOverflow)
+		if (status == XBufferOverflow) {
 			return;
+		}
 	} else {
 		len = XLookupString(e, buf, sizeof buf, &ksym, NULL);
 	}
@@ -1945,7 +2017,7 @@ kpress(XEvent *ev)
 	/* 1. shortcuts */
 	for (bp = shortcuts; bp < shortcuts + LEN(shortcuts); bp++) {
 		if (ksym == bp->keysym && match(bp->mod, e->state) &&
-				(!bp->screen || bp->screen == screen)) {
+		                (!bp->screen || bp->screen == screen)) {
 			bp->func(&(bp->arg));
 			return;
 		}
@@ -1958,8 +2030,9 @@ kpress(XEvent *ev)
 	}
 
 	/* 3. composed string from input method */
-	if (len == 0)
+	if (len == 0) {
 		return;
+	}
 	if (len == 1 && e->state & Mod1Mask) {
 		if (IS_SET(MODE_8BIT)) {
 			if (*buf < 0177) {
@@ -2000,8 +2073,9 @@ void
 resize(XEvent *e)
 {
 
-	if (e->xconfigure.width == win.w && e->xconfigure.height == win.h)
+	if (e->xconfigure.width == win.w && e->xconfigure.height == win.h) {
 		return;
+	}
 
 
 	cresize(e->xconfigure.width, e->xconfigure.height);
@@ -2025,8 +2099,9 @@ run(void)
 		 * does filter out the key event and some client message for
 		 * the input method too.
 		 */
-		if (XFilterEvent(&ev, None))
+		if (XFilterEvent(&ev, None)) {
 			continue;
+		}
 		if (ev.type == ConfigureNotify) {
 			w = ev.xconfigure.width;
 			h = ev.xconfigure.height;
@@ -2036,36 +2111,43 @@ run(void)
 	ttyfd = ttynew(opt_line, shell, opt_io, opt_cmd);
 	cresize(w, h);
 
-	for (timeout = -1, drawing = 0, lastblink = (struct timespec){0};;) {
+	for (timeout = -1, drawing = 0, lastblink = (struct timespec) {
+	0
+};;) {
 		FD_ZERO(&rfd);
 		FD_SET(ttyfd, &rfd);
 		FD_SET(xfd, &rfd);
 
-		if (XPending(xw.dpy))
-			timeout = 0;  /* existing events might not set xfd */
+		if (XPending(xw.dpy)) {
+			timeout = 0;        /* existing events might not set xfd */
+		}
 
 		seltv.tv_sec = timeout / 1E3;
 		seltv.tv_nsec = 1E6 * (timeout - 1E3 * seltv.tv_sec);
 		tv = timeout >= 0 ? &seltv : NULL;
 
-		if (pselect(MAX(xfd, ttyfd)+1, &rfd, NULL, NULL, tv, NULL) < 0) {
-			if (errno == EINTR)
+		if (pselect(MAX(xfd, ttyfd) + 1, &rfd, NULL, NULL, tv, NULL) < 0) {
+			if (errno == EINTR) {
 				continue;
+			}
 			die("select failed: %s\n", strerror(errno));
 		}
 		clock_gettime(CLOCK_MONOTONIC, &now);
 
-		if (FD_ISSET(ttyfd, &rfd))
+		if (FD_ISSET(ttyfd, &rfd)) {
 			ttyread();
+		}
 
 		xev = 0;
 		while (XPending(xw.dpy)) {
 			xev = 1;
 			XNextEvent(xw.dpy, &ev);
-			if (XFilterEvent(&ev, None))
+			if (XFilterEvent(&ev, None)) {
 				continue;
-			if (handler[ev.type])
+			}
+			if (handler[ev.type]) {
 				(handler[ev.type])(&ev);
+			}
 		}
 
 		/*
@@ -2079,27 +2161,27 @@ run(void)
 		 * maximum latency intervals during `cat huge.txt`, and perfect
 		 * sync with periodic updates from animations/key-repeats/etc.
 		 */
-		if (FD_ISSET(ttyfd, &rfd) || xev)
-		{
+		if (FD_ISSET(ttyfd, &rfd) || xev) {
 			if (!drawing) {
 				trigger = now;
 				drawing = 1;
 			}
 			timeout = (maxlatency - TIMEDIFF(now, trigger)) \
 			          / maxlatency * minlatency;
-			if (timeout > 0)
-				continue;  /* we have time, try to find idle */
+			if (timeout > 0) {
+				continue;        /* we have time, try to find idle */
+			}
 		}
 
 
 		/* idle detected or maxlatency exhausted -> draw */
 		timeout = -1;
-		if (blinktimeout && tattrset(ATTR_BLINK))
-		{
+		if (blinktimeout && tattrset(ATTR_BLINK)) {
 			timeout = blinktimeout - TIMEDIFF(now, lastblink);
 			if (timeout <= 0) {
-				if (-timeout > blinktimeout) /* start visible */
+				if (-timeout > blinktimeout) { /* start visible */
 					win.mode |= MODE_BLINK;
+				}
 				win.mode ^= MODE_BLINK;
 				tsetdirtattr(ATTR_BLINK);
 				lastblink = now;
@@ -2117,12 +2199,12 @@ void
 usage(void)
 {
 	die("usage: %s [-aiv] [-c class]"
-		" [-f font] [-g geometry]"
+	    " [-f font] [-g geometry]"
 	    " [-n name] [-o file]\n"
 	    "          [-T title] [-t title] [-w windowid]"
 	    " [[-e] command [args ...]]\n"
 	    "       %s [-aiv] [-c class]"
-		" [-f font] [-g geometry]"
+	    " [-f font] [-g geometry]"
 	    " [-n name] [-o file]\n"
 	    "          [-T title] [-t title] [-w windowid] -l line"
 	    " [stty_args ...]\n", argv0, argv0);
@@ -2147,14 +2229,16 @@ main(int argc, char *argv[])
 		break;
 	case 'e':
 		if (argc > 0)
+		{
 			--argc, ++argv;
+		}
 		goto run;
 	case 'f':
 		opt_font = EARGF(usage());
 		break;
 	case 'g':
 		xw.gm = XParseGeometry(EARGF(usage()),
-				&xw.l, &xw.t, &cols, &rows);
+		                       &xw.l, &xw.t, &cols, &rows);
 		break;
 	case 'i':
 		xw.isfixed = 1;
@@ -2183,11 +2267,13 @@ main(int argc, char *argv[])
 	} ARGEND;
 
 run:
-	if (argc > 0) /* eat all remaining arguments */
+	if (argc > 0) { /* eat all remaining arguments */
 		opt_cmd = argv;
+	}
 
-	if (!opt_title)
+	if (!opt_title) {
 		opt_title = (opt_line || !opt_cmd) ? "st" : opt_cmd[0];
+	}
 
 	setlocale(LC_CTYPE, "");
 	XSetLocaleModifiers("");
