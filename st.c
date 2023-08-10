@@ -2754,6 +2754,7 @@ check_control_code:
 
 	if (IS_SET(MODE_INSERT) && term.c.x + width < term.col) {
 		memmove(gp + width, gp, (term.col - term.c.x - width) * sizeof(Glyph));
+		gp->mode &= ~ATTR_WIDE;
 	}
 
 	if (term.c.x + width > term.col) {
